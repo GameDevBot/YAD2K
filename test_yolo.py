@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 """Run a YOLO_v2 style detection model on test images."""
 import argparse
 import colorsys
@@ -12,6 +12,9 @@ from keras.models import load_model
 from PIL import Image, ImageDraw, ImageFont
 
 from yad2k.models.keras_yolo import yolo_eval, yolo_head
+
+import csv
+
 
 parser = argparse.ArgumentParser(
     description='Run a YOLO_v2 style detection model on test images..')
@@ -61,11 +64,17 @@ def _main(args):
     test_path = os.path.expanduser(args.test_path)
     output_path = os.path.expanduser(args.output_path)
 
+
     if not os.path.exists(output_path):
         print('Creating output path {}'.format(output_path))
         os.mkdir(output_path)
 
     sess = K.get_session()  # TODO: Remove dependence on Tensorflow session.
+
+    f_write = open(os.path.join(output_path) + '/data.csv', 'wt')
+    print("Writing CSV to " + (os.path.join(output_path) + 'data.csv'))
+    writer = csv.writer(f_write, delimiter=',')
+    writer.writerow(["image_file", "predicted_class", "score", "left", "top", "right", "bottom"])
 
     with open(classes_path) as f:
         class_names = f.readlines()
@@ -83,6 +92,8 @@ def _main(args):
     num_anchors = len(anchors)
     # TODO: Assumes dim ordering is channel last
     model_output_channels = yolo_model.layers[-1].output_shape[-1]
+    print(model_output_channels)
+    print(num_anchors * (num_classes + 5))
     assert model_output_channels == num_anchors * (num_classes + 5), \
         'Mismatch between model and given anchor and class sizes. ' \
         'Specify matching anchors and classes with --anchors_path and ' \
@@ -123,6 +134,7 @@ def _main(args):
             continue
 
         image = Image.open(os.path.join(test_path, image_file))
+        black_box = Image.new('L',(320,160))
         if is_fixed_size:  # TODO: When resizing we can use minibatch input.
             resized_image = image.resize(
                 tuple(reversed(model_image_size)), Image.BICUBIC)
@@ -175,19 +187,43 @@ def _main(args):
             else:
                 text_origin = np.array([left, top + 1])
 
-            # My kingdom for a good redistributable image drawing library.
-            for i in range(thickness):
-                draw.rectangle(
-                    [left + i, top + i, right - i, bottom - i],
-                    outline=colors[c])
-            draw.rectangle(
-                [tuple(text_origin), tuple(text_origin + label_size)],
-                fill=colors[c])
-            draw.text(text_origin, label, fill=(0, 0, 0), font=font)
-            del draw
+            ######
 
-        image.save(os.path.join(output_path, image_file), quality=90)
+            print("LABEL ", label)
+
+            sal_map_draw = ImageDraw.Draw(black_box)
+            if 'car' or 'bus' or 'truck' 'traffic light' or 'person' or 'stop sign' in label :
+                to_csv = []
+                to_csv.append(image_file)
+                to_csv.append(predicted_class)
+                to_csv.append(score)
+                to_csv.append(left)
+                to_csv.append(top)
+                to_csv.append(right)
+                to_csv.append(bottom)
+
+                writer.writerow(to_csv)
+        #     ######
+        #     # My kingdom for a good redistributable image drawing library.
+        #     for i in range(thickness):
+        #         draw.rectangle(
+        #             [left + i, top + i, right - i, bottom - i],
+        #             outline=colors[c])
+        #         sal_map_draw.rectangle(
+        #             [left + i, top + i, right - i, bottom - i],
+        #             fill='white')                    
+        #     draw.rectangle(
+        #         [tuple(text_origin), tuple(text_origin + label_size)],
+        #         fill=colors[c])
+        #     draw.text(text_origin, label, fill=(0, 0, 0), font=font)
+        #     del draw
+        #     del sal_map_draw
+
+        # print(output_path)
+        image.save(os.path.join(output_path+ "/not_black/", image_file), quality=100)
+        black_box.save(os.path.join(output_path + "/black/", "black_" + image_file), quality=100)
     sess.close()
+    f_write.close()
 
 
 if __name__ == '__main__':

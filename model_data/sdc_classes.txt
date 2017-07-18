@@ -1,0 +1,81 @@
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+carperson
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+carperson
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+car
+bus
+truck
+traffic light
+stop sign
+person
+carperson
+car
+bus
+truck
+traffic light
+
