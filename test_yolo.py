@@ -204,7 +204,7 @@ def _main(args):
 
 
             sal_map_draw = ImageDraw.Draw(black_box)
-            if ('car' or 'bus' or 'truck' 'traffic light' or 'person' or 'stop sign') == predicted_class :
+            if  'car' == predicted_class or  'bus' == predicted_class or  'truck' == predicted_class or  'traffic light' == predicted_class or  'person' == predicted_class or 'stop sign' == predicted_class :
                 print(label, (left, top), (right, bottom))
                 to_csv = []
                 to_csv.append(image_file)
