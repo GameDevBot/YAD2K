@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from yad2k.models.keras_yolo import yolo_eval, yolo_head
 
 import csv
+import sys
 
 
 parser = argparse.ArgumentParser(
@@ -55,6 +56,14 @@ parser.add_argument(
     help='threshold for non max suppression IOU, default .5',
     default=.5)
 
+import re
+def sort_nicely( l ):
+    """ Sort the given list in the way that humans expect.
+    """
+    convert = lambda text: int(text) if text.isdigit() else text
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+    l.sort( key=alphanum_key )
+    return l
 
 def _main(args):
     model_path = os.path.expanduser(args.model_path)
@@ -72,7 +81,7 @@ def _main(args):
     sess = K.get_session()  # TODO: Remove dependence on Tensorflow session.
 
     f_write = open(os.path.join(output_path) + '/data.csv', 'wt')
-    print("Writing CSV to " + (os.path.join(output_path) + 'data.csv'))
+    print("Writing CSV to " + (os.path.join(output_path) + '/data.csv'))
     writer = csv.writer(f_write, delimiter=',')
     writer.writerow(["image_file", "predicted_class", "score", "left", "top", "right", "bottom"])
 
@@ -125,7 +134,11 @@ def _main(args):
         score_threshold=args.score_threshold,
         iou_threshold=args.iou_threshold)
 
-    for image_file in os.listdir(test_path):
+    lst = os.listdir(test_path)
+    lst = sort_nicely(lst)
+    lst = lst[5000:]
+
+    for image_file in lst:
         try:
             image_type = imghdr.what(os.path.join(test_path, image_file))
             if not image_type:
@@ -158,13 +171,13 @@ def _main(args):
                 input_image_shape: [image.size[1], image.size[0]],
                 K.learning_phase(): 0
             })
-        print('Found {} boxes for {}'.format(len(out_boxes), image_file))
+        # print('Found {} boxes for {}'.format(len(out_boxes), image_file))
 
         font = ImageFont.truetype(
             font='font/FiraMono-Medium.otf',
             size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
         thickness = (image.size[0] + image.size[1]) // 300
-
+        print(image_file)
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = class_names[c]
             box = out_boxes[i]
@@ -180,7 +193,7 @@ def _main(args):
             left = max(0, np.floor(left + 0.5).astype('int32'))
             bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
             right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
-            print(label, (left, top), (right, bottom))
+            
 
             if top - label_size[1] >= 0:
                 text_origin = np.array([left, top - label_size[1]])
@@ -189,10 +202,10 @@ def _main(args):
 
             ######
 
-            print("LABEL ", label)
 
             sal_map_draw = ImageDraw.Draw(black_box)
-            if 'car' or 'bus' or 'truck' 'traffic light' or 'person' or 'stop sign' in label :
+            if ('car' or 'bus' or 'truck' 'traffic light' or 'person' or 'stop sign') == predicted_class :
+                print(label, (left, top), (right, bottom))
                 to_csv = []
                 to_csv.append(image_file)
                 to_csv.append(predicted_class)
@@ -201,25 +214,23 @@ def _main(args):
                 to_csv.append(top)
                 to_csv.append(right)
                 to_csv.append(bottom)
-
                 writer.writerow(to_csv)
-        #     ######
-        #     # My kingdom for a good redistributable image drawing library.
-        #     for i in range(thickness):
-        #         draw.rectangle(
-        #             [left + i, top + i, right - i, bottom - i],
-        #             outline=colors[c])
-        #         sal_map_draw.rectangle(
-        #             [left + i, top + i, right - i, bottom - i],
-        #             fill='white')                    
-        #     draw.rectangle(
-        #         [tuple(text_origin), tuple(text_origin + label_size)],
-        #         fill=colors[c])
-        #     draw.text(text_origin, label, fill=(0, 0, 0), font=font)
-        #     del draw
-        #     del sal_map_draw
 
-        # print(output_path)
+                for i in range(thickness):
+                    draw.rectangle(
+                        [left + i, top + i, right - i, bottom - i],
+                        outline=colors[c])
+                    sal_map_draw.rectangle(
+                        [left + i, top + i, right - i, bottom - i],
+                        fill='white')                    
+                draw.rectangle(
+                    [tuple(text_origin), tuple(text_origin + label_size)],
+                    fill=colors[c])
+                draw.text(text_origin, label, fill=(0, 0, 0), font=font)
+                del draw
+                del sal_map_draw
+
+            # # print(output_path)
         image.save(os.path.join(output_path+ "/not_black/", image_file), quality=100)
         black_box.save(os.path.join(output_path + "/black/", "black_" + image_file), quality=100)
     sess.close()
